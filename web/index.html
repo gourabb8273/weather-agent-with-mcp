@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Agent</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 560px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #f5f5f5;
+    }
+    h1 {
+      font-size: 1.5rem;
+      color: #1a1a1a;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    label { display: block; font-weight: 500; margin-bottom: 0.35rem; color: #333; }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    }
+    button {
+      margin-top: 0.75rem;
+      padding: 0.6rem 1.25rem;
+      background: #0d6efd;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #0b5ed7; }
+    button:disabled {
+      background: #adb5bd;
+      cursor: not-allowed;
+    }
+    #response {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #0d6efd;
+      white-space: pre-wrap;
+      min-height: 3rem;
+    }
+    #response.empty { color: #999; }
+    #response.error { border-left-color: #dc3545; background: #fff5f5; }
+    .loading { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Weather Agent</h1>
+  <p class="subtitle">Ask about weather in any city (e.g. "What's the weather in Seattle?")</p>
+
+  <div class="card">
+    <form id="form">
+      <label for="message">Your question</label>
+      <input type="text" id="message" name="message" placeholder="What's the weather in Seattle?" autocomplete="off">
+      <button type="submit" id="submit">Ask</button>
+    </form>
+
+    <div id="response" class="empty">Response will appear here.</div>
+  </div>
+
+  <script>
+    const form = document.getElementById("form");
+    const message = document.getElementById("message");
+    const responseEl = document.getElementById("response");
+    const submitBtn = document.getElementById("submit");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = (message.value || "").trim();
+      if (!text) return;
+
+      responseEl.classList.remove("empty", "error");
+      responseEl.textContent = "Loading…";
+      responseEl.classList.add("loading");
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json().catch(() => ({}));
+        const responseText = data.response || (res.ok ? "" : "Something went wrong.");
+
+        responseEl.classList.remove("loading");
+        responseEl.textContent = responseText || "No response.";
+        if (!res.ok) responseEl.classList.add("error");
+      } catch (err) {
+        responseEl.classList.remove("loading");
+        responseEl.textContent = "Network error: " + err.message;
+        responseEl.classList.add("error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
